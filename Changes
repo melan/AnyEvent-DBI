@@ -1,0 +1,4 @@
+Revision history for AnyEvent::DBI
+
+1.0  Mon Jun  9 16:27:36 CEST 2008
+	- original version, an AnyEvent::HTTP clone.
