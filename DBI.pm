@@ -6,18 +6,35 @@ AnyEvent::DBI - asynchronous DBI access
 
    use AnyEvent::DBI;
 
+   my $cv = AnyEvent->condvar;
+
+   my $dbh = new AnyEvent::DBI "DBI:SQLite:dbname=test.db", "", "";
+
+   $dbh->exec ("select * from test where num=?", 10, sub {
+      my ($rows, $rv) = @_;
+
+      print "@$_\n"
+         for @$rows;
+
+      $cv->broadcast;
+   });
+
+   # asynchronously do sth. else here
+
+   $cv->wait;
+
 =head1 DESCRIPTION
 
 This module is an L<AnyEvent> user, you need to make sure that you use and
 run a supported event loop.
 
-This module implements asynchronous DBI access my forking or executing
+This module implements asynchronous DBI access by forking or executing
 separate "DBI-Server" processes and sending them requests.
 
 It means that you can run DBI requests in parallel to other tasks.
 
 The overhead for very simple statements ("select 0") is somewhere
-around 120% to 200% (single/dual core CPU) compared to an explicit
+around 120% to 200% (dual/single core CPU) compared to an explicit
 prepare_cached/execute/fetchrow_arrayref/finish combination.
 
 =cut
@@ -37,7 +54,7 @@ use DBI ();
 use AnyEvent ();
 use AnyEvent::Util ();
 
-our $VERSION = '1.0';
+our $VERSION = '1.1';
 
 # this is the forked server code
 
@@ -56,10 +73,10 @@ sub req_exec {
 
    my $sth = $DBH->prepare_cached ($st, undef, 1);
 
-   $sth->execute (@args)
+   my $rv = $sth->execute (@args)
       or die $sth->errstr;
 
-   [$sth->fetchall_arrayref]
+   [1, $sth->{NUM_OF_FIELDS} ? $sth->fetchall_arrayref : undef, { rv => $rv }]
 }
 
 sub serve {
@@ -96,7 +113,15 @@ sub serve {
       }
    };
 
-   kill 9, $$; # no other way on the broken windows platform
+   if (AnyEvent::WIN32) {
+      kill 9, $$; # no other way on the broken windows platform
+      # and the above doesn't even work on windows, it seems the only
+      # way to is to leak memory and kill 9 from the parent. yay.
+   }
+
+   require POSIX;
+   POSIX::_exit (0);
+   # and the above kills the parent process on windows
 }
 
 =head2 METHODS
@@ -227,8 +252,10 @@ sub _error {
 
    $@ = $error;
 
-   $self->{on_error}($self, $filename, $line, $fatal)
-      if $self->{on_error};
+   if ($self->{on_error}) {
+      $self->{on_error}($self, $filename, $line, $fatal);
+      return unless $fatal;
+   }
 
    die "$error at $filename, line $line\n";
 }
@@ -250,14 +277,16 @@ sub _req {
    }
 }
 
-=item $dbh->exec ("statement", @args, $cb->($rows, %extra))
+=item $dbh->exec ("statement", @args, $cb->($rows, $rv, ...))
 
 Executes the given SQL statement with placeholders replaced by
 C<@args>. The statement will be prepared and cached on the server side, so
 using placeholders is compulsory.
 
 The callback will be called with the result of C<fetchall_arrayref> as
-first argument and possibly a hash reference with additional information.
+first argument (or C<undef> if the statement wasn't a select statement)
+and the return value of C<execute> as second argument. Additional
+arguments might get passed as well.
 
 If an error occurs and the C<on_error> callback returns, then no arguments
 will be passed and C<$@> contains the error message.

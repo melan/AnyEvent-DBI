@@ -4,17 +4,34 @@ NAME
 SYNOPSIS
        use AnyEvent::DBI;
 
+       my $cv = AnyEvent->condvar;
+
+       my $dbh = new AnyEvent::DBI "DBI:SQLite:dbname=test.db", "", "";
+
+       $dbh->exec ("select * from test where num=?", 10, sub {
+          my ($rows, $rv) = @_;
+
+          print "@$_\n"
+             for @$rows;
+
+          $cv->broadcast;
+       });
+
+       # asynchronously do sth. else here
+
+       $cv->wait;
+
 DESCRIPTION
     This module is an AnyEvent user, you need to make sure that you use and
     run a supported event loop.
 
-    This module implements asynchronous DBI access my forking or executing
+    This module implements asynchronous DBI access by forking or executing
     separate "DBI-Server" processes and sending them requests.
 
     It means that you can run DBI requests in parallel to other tasks.
 
     The overhead for very simple statements ("select 0") is somewhere around
-    120% to 200% (single/dual core CPU) compared to an explicit
+    120% to 200% (dual/single core CPU) compared to an explicit
     prepare_cached/execute/fetchrow_arrayref/finish combination.
 
   METHODS
@@ -46,14 +63,15 @@ DESCRIPTION
             If omitted, then "die" will be called on any errors, fatal or
             not.
 
-    $dbh->exec ("statement", @args, $cb->($rows, %extra))
+    $dbh->exec ("statement", @args, $cb->($rows, $rv, ...))
         Executes the given SQL statement with placeholders replaced by
         @args. The statement will be prepared and cached on the server side,
         so using placeholders is compulsory.
 
         The callback will be called with the result of "fetchall_arrayref"
-        as first argument and possibly a hash reference with additional
-        information.
+        as first argument (or "undef" if the statement wasn't a select
+        statement) and the return value of "execute" as second argument.
+        Additional arguments might get passed as well.
 
         If an error occurs and the "on_error" callback returns, then no
         arguments will be passed and $@ contains the error message.

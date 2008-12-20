@@ -1,4 +1,11 @@
 Revision history for AnyEvent::DBI
 
+1.1  Sat Dec 20 22:28:11 CET 2008
+	- INCOMPATIBLE CHANGE: pass result value in place of %extra
+          to callbacks.
+	- do not call fetchrow_arrayref on non-select statements.
+        - do not die on non-fatal errors, unless there is no error callback
+          (reported by Adam Rosenstein).
+
 1.0  Mon Jun  9 16:27:36 CEST 2008
 	- original version, an AnyEvent::HTTP clone.
