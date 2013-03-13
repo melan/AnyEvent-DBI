@@ -89,27 +89,26 @@ sub req_open {
    [1, 1]
 }
 
-=cut
-
-=head2 QUERY LIST OF HASHREFS
-
-To do that just set C<PERL_ANYEVENT_DBI_QUERY_HASHREF> environment variable to true.
-AnyEvent::DBI will return into callback $rows as ref to array of hashrefs. The same as Slice in C<sele
-
-=cut
-
+sub req_exec_hashref {
+   my ($st, @args) = @{+shift};
+   _req_exec(1, $st, @args);
+}
 
 sub req_exec {
-   my (undef, $st, @args) = @{+shift};
+   my ($st, @args) = @{+shift};
+   _req_exec(undef, $st, @args);
+}
+
+sub _req_exec {
+   my ($hashref, $st, @args) = @_;
+
    my $sth = $DBH->prepare_cached ($st, undef, 1)
       or die [$DBI::errstr];
 
    my $rv = $sth->execute (@args)
       or die [$sth->errstr];
 
-   my $send_hash = defined $ENV{PERL_ANYEVENT_DBI_QUERY_HASHREF};
-
-   [1, $sth->{NUM_OF_FIELDS} ? $sth->fetchall_arrayref( $send_hash ? {} : () ) : undef, $rv]
+   [1, $sth->{NUM_OF_FIELDS} ? $sth->fetchall_arrayref( $hashref ? {} : () ) : undef, $rv]
 }
 
 sub req_attr {
@@ -559,6 +558,11 @@ call.
 If an error occurs and the C<on_error> callback returns, then only C<$dbh>
 will be passed and C<$@> contains the error message.
 
+=item $dbh->exec_hashref ("statement", @args, $cb->($dbh, \@rows, $rv))
+
+Absolutely the same method as C<$dbh->exec> is. The only difference is that 
+\@rows is a ref to array of hash refs
+
 =item $dbh->attr ($attr_name[, $attr_value], $cb->($dbh, $new_value))
 
 An accessor for the handle attributes, such as C<AutoCommit>,
@@ -624,7 +628,7 @@ intstr() function:
 
 =cut
 
-for my $cmd_name (qw(exec attr begin_work commit rollback func)) {
+for my $cmd_name (qw(exec exec_hashref attr begin_work commit rollback func)) {
    eval 'sub ' . $cmd_name . '{
       my $cb = pop;
       splice @_, 1, 0, $cb, (caller)[1,2], "req_' . $cmd_name . '";
