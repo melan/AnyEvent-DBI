@@ -8,9 +8,10 @@ my $mm = MM->new({
 	            },
     NAME         => "AnyEvent::DBI",
     VERSION_FROM => "DBI.pm",
-    PREREQ_PM    => {
-       AnyEvent  => 4.15,
-       DBI       => 1.0,
+    PREREQ_PM        => {
+       AnyEvent      => 4.15,
+       DBI           => 1.0,
+       common::sense => 3.3,
     },
 });
 

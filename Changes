@@ -1,5 +1,16 @@
 Revision history for AnyEvent::DBI
 
+2.2  Thu May 17 04:13:27 CEST 2012
+	- timeouts didn't trigger (Adam Rosenstein).
+        - do not leave zombie processes (Adam Rosenstein).
+
+2.1  Sat Oct 30 22:22:05 CEST 2010
+	- no longer kill -9 the child, just kill -TERM and close the connection,
+          to avoid database corruption - this also works around a perl bug
+          (global destruction).
+	- convert to the faster AE API - major speedup.
+        - use common::sense.
+
 2.0  Mon Jun 29 10:18:58 CEST 2009
 	- INCOMPATIBLE CHANGE: callbacks now are passed the $dbh
           as first argument, always.
@@ -7,7 +18,7 @@ Revision history for AnyEvent::DBI
           callbacks, as documented but not implemented for 1.1.
         - thanks to viacheslav.t for testing.
 	- major patch by Adam Rosenstein:
-        - add an on_connect callback (for reliable failure notification)        
+        - add an on_connect callback (for reliable failure notification)
         - add timeouts to connect and exec.
         - reaps server processes if you undef your AE::DBI handle and keep
           running.

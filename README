@@ -33,7 +33,7 @@ DESCRIPTION
     It means that you can run DBI requests in parallel to other tasks.
 
     The overhead for very simple statements ("select 0") is somewhere around
-    120% to 200% (dual/single core CPU) compared to an explicit
+    100% to 120% (dual/single core CPU) compared to an explicit
     prepare_cached/execute/fetchrow_arrayref/finish combination.
 
   ERROR HANDLING
@@ -99,7 +99,7 @@ DESCRIPTION
             If you supply an "exec_server" argument, then the DBI server
             process will fork and exec another perl interpreter (using $^X)
             with just the AnyEvent::DBI proxy running. This will provide the
-            cleanest possible porxy for your database server.
+            cleanest possible proxy for your database server.
 
             If you do not supply the "exec_server" argument (or supply it
             with a false value) then the traditional method of starting the
