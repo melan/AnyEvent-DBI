@@ -90,6 +90,15 @@ sub req_open {
    [1, 1]
 }
 
+=cut
+
+=head2 QUERY LIST OF HASHREFS
+
+To do that just set C<PERL_ANYEVENT_DBI_QUERY_HASHREF> environment variable to true. 
+AnyEvent::DBI will return into callback $rows as ref to array of hashrefs. The same as Slice in C<selectall_arrayref>
+
+=cut
+
 sub req_exec {
    my (undef, $st, @args) = @{+shift};
    my $sth = $DBH->prepare_cached ($st, undef, 1)
@@ -98,7 +107,9 @@ sub req_exec {
    my $rv = $sth->execute (@args)
       or die [$sth->errstr];
 
-   [1, $sth->{NUM_OF_FIELDS} ? $sth->fetchall_arrayref : undef, $rv]
+   my $send_hash = defined $ENV{PERL_ANYEVENT_DBI_QUERY_HASHREF};
+
+   [1, $sth->{NUM_OF_FIELDS} ? $sth->fetchall_arrayref( $send_hash ? {} : () ) : undef, $rv]
 }
 
 sub req_attr {
