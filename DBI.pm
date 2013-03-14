@@ -90,12 +90,12 @@ sub req_open {
 }
 
 sub req_exec_hashref {
-   my ($st, @args) = @{+shift};
+   my (undef, $st, @args) = @{+shift};
    _req_exec(1, $st, @args);
 }
 
 sub req_exec {
-   my ($st, @args) = @{+shift};
+   my (undef, $st, @args) = @{+shift};
    _req_exec(undef, $st, @args);
 }
 
